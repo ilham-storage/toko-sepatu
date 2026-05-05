@@ -2,12 +2,23 @@ const db = require('../config/db');
 
 //Get semua produk
 const getProduk = async (req, res) => {
-    try{
-        const[rows] = await db.query('SELECT * FROM produk');
+    try {
+        const { kategori } = req.query;
 
+        let query  = 'SELECT * FROM produk';
+        let params = [];
+
+        // Kalau ada ?kategori=... → filter
+        if (kategori) {
+            query  = 'SELECT * FROM produk WHERE kategori = ?';
+            params = [kategori];
+        }
+
+        const [rows] = await db.query(query, params);
         res.json(rows);
-    } catch (err){
-        res.status(500).json({ message: "Terjadi kesalahan server"});
+
+    } catch (err) {
+        res.status(500).json({ message: "Terjadi kesalahan server" });
     }
 };
 

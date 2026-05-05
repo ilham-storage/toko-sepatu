@@ -12,17 +12,13 @@ const {
 } = require('../controllers/produkController');
 
 //Publik tidak perlu token
-router.get('/', getProduk);
-router.get('/kategori', (req, res, next) => {
-    console.log("Masuk route kategori!"); // ← tambah ini
-    console.log("Query:", req.query);      // ← dan ini
-    next();
-}, getProdukByKategori);
+// Publik
+router.get('/',    getProduk);    // GET /produk atau /produk?kategori=sneakers
 router.get('/:id', getProdukById);
 
-//admin only perlu token
-router.post('/', authMiddleware,tambahProduk);
-router.put('/:id', authMiddleware,editProduk);
-router.delete('/:id', authMiddleware,hapusProduk);
+// Admin only
+router.post('/',    authMiddleware, tambahProduk);
+router.put('/:id',  authMiddleware, editProduk);
+router.delete('/:id', authMiddleware, hapusProduk);
 
 module.exports = router;
