@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — SepatuKu</title>
+  <link href="https://fonts.google.com/share?selection.family=Oswald:wght@200..700" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="auth-wrap">
+    <div class="auth-logo">👟 SepatuKu</div>
+    <p class="auth-sub">Selamat datang kembali!</p>
+
+    <div class="auth-card">
+      <h2>Login</h2>
+
+      <div class="field">
+        <label>Email</label>
+        <input id="email" class="input" type="email" placeholder="Masukkan email kamu" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input id="password" class="input" type="password" placeholder="Masukkan password" />
+      </div>
+
+      <button class="btn-primary btn-full" onclick="login()">Masuk</button>
+      <p id="message"></p>
+    </div>
+
+    <p class="auth-footer">
+      Belum punya akun? <a href="register.html">Register di sini</a>
+    </p>
+  </div>
+
+  <script>
+    const API = "http://localhost:3000";
+
+    // Kalau sudah login → langsung ke index
+    const token = localStorage.getItem("token");
+    if (token) window.location.href = "index.html";
+
+    async function login() {
+      const email    = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        document.getElementById("message").innerText = "Email dan password wajib diisi!";
+        return;
+    }
+
+      try {
+        const res = await fetch(API + "/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },  
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          // Simpan token dan data user
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("user", JSON.stringify(data.user));
+
+          if(data.user.role === "admin") {
+            window.location.href = "admin.html";
+          } else {
+            window.location.href = "index.html";
+          }
+        }
+      } catch (err) {
+        document.getElementById("message").innerText = "Server error!";
+      }
+    }
+  
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") login();
+    });
+
+  </script>
+
+</body>
+</html>

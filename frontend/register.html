@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register — SepaturKu</title>
+  <link href="https://fonts.google.com/share?selection.family=Oswald:wght@200..700" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-wrap">
+    <div class="auth-logo">👟 SepatuKu</div>
+    <p class="auth-sub">Buat akun baru untuk mulai belanja!</p>
+
+    <div class="auth-card">
+      <h2>Register</h2>
+
+      <div class="field">
+        <label>Nama</label>
+        <input id="nama" class="input" type="text" placeholder="Masukkan nama kamu" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label>Email</label>
+        <input id="email" class="input" type="email" placeholder="Masukkan email kamu" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <input id="password" class="input" type="password" placeholder="Buat password" />
+      </div>
+
+      <button class="btn-primary btn-full" onclick="register()">Buat Akun</button>
+      <p id="message"></p>
+    </div>
+
+    <p class="auth-footer">
+      Sudah punya akun? <a href="login.html">Login di sini</a>
+    </p>
+  </div>
+
+  <script>
+    const API = "http://localhost:3000";
+
+    async function register() {
+      const nama     = document.getElementById("nama").value;
+      const email    = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+
+      try {
+        const res = await fetch(API + "/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nama, email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          document.getElementById("message").className   = "msg-success";
+          document.getElementById("message").innerText   = "Register berhasil! Redirecting...";
+          setTimeout(() => window.location.href = "login.html", 1500);
+        } else {
+          document.getElementById("message").innerText = data.message;
+        }
+
+      } catch (err) {
+        document.getElementById("message").innerText = "Server error!";
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Enter") register();
+    });
+  </script>
+
+</body>
+</html>

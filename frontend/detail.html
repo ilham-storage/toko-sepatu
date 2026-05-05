@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Produk — SepatuKu</title>
+  <link href="https://fonts.google.com/share?selection.family=Oswald:wght@200..700" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a class="navbar-logo" href="index.html">👟 SepatuKu</a>
+      <div class="navbar-menu">
+        <a href="index.html">Produk</a>
+        <a href="orders.html">Pesanan Saya</a>
+      </div>
+      <div class="navbar-right">
+        <span id="nav-username"></span>
+        <a class="btn-cart" href="cart.html">🛒 Cart</a>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="container">
+
+    <!-- Tombol back -->
+    <a href="index.html" class="btn-secondary" style="margin-bottom:24px; display:inline-block;">
+      ← Kembali
+    </a>
+
+    <!-- Detail wrap -->
+    <div class="detail-wrap" id="detailWrap">
+      <p style="color:var(--text-muted)">Memuat produk...</p>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" style="display:none"></div>
+
+  <script>
+    const API   = "http://localhost:3000";
+    const token = localStorage.getItem("token");
+    const user  = JSON.parse(localStorage.getItem("user"));
+
+    // Cek token
+    if (!token) window.location.href = "login.html";
+
+    // Tampilkan nama user
+    document.getElementById("nav-username").innerText = user ? "Halo, " + user.nama + "!" : "";
+
+    // Ambil id dari URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const produkId  = urlParams.get("id");
+
+    // Kalau tidak ada id → balik ke index
+    if (!produkId) window.location.href = "index.html";
+
+    let jumlah = 1;
+
+    // ── Format Harga ──
+    function formatHarga(harga) {
+      return "Rp " + harga.toLocaleString("id-ID");
+    }
+
+    // ── Get Detail Produk ──
+    async function getProdukDetail() {
+      try {
+        const res  = await fetch(API + "/produk/" + produkId);
+        const data = await res.json();
+
+        if (!res.ok) {
+          document.getElementById("detailWrap").innerHTML =
+            "<p style='color:var(--danger)'>Produk tidak ditemukan!</p>";
+          return;
+        }
+
+        document.getElementById("detailWrap").innerHTML = `
+          <div class="detail-img">👟</div>
+
+          <div class="detail-info">
+            <div class="detail-kategori">${data.kategori}</div>
+            <div class="detail-nama">${data.nama}</div>
+            <div class="detail-harga">${formatHarga(data.harga)}</div>
+            <div class="detail-deskripsi">${data.deskripsi}</div>
+            <div class="detail-stok">Stok tersedia: <strong>${data.stok} pasang</strong></div>
+
+            <!-- Pilih jumlah -->
+            <div class="detail-jumlah">
+              <button class="jumlah-btn" onclick="kurangJumlah()">−</button>
+              <span id="jumlah-display">1</span>
+              <button class="jumlah-btn" onclick="tambahJumlah(${data.stok})">+</button>
+            </div>
+
+            <!-- Tombol tambah ke cart -->
+            <button class="btn-primary btn-full" onclick="tambahKeCart(${data.id}, ${data.stok})">
+              🛒 Tambah ke Cart
+            </button>
+          </div>
+        `;
+
+      } catch (err) {
+        document.getElementById("detailWrap").innerHTML =
+          "<p style='color:var(--danger)'>Gagal memuat produk!</p>";
+      }
+    }
+
+    // ── Kurangi Jumlah ──
+    function kurangJumlah() {
+      if (jumlah > 1) {
+        jumlah--;
+        document.getElementById("jumlah-display").innerText = jumlah;
+      }
+    }
+
+    // ── Tambah Jumlah ──
+    function tambahJumlah(stok) {
+      if (jumlah < stok) {
+        jumlah++;
+        document.getElementById("jumlah-display").innerText = jumlah;
+      } else {
+        showToast("Stok tidak cukup!", "error");
+      }
+    }
+
+    // ── Tambah ke Cart ──
+    async function tambahKeCart(produkId, stok) {
+      if (jumlah > stok) {
+        showToast("Stok tidak cukup!", "error");
+        return;
+      }
+
+      try {
+        const res = await fetch(API + "/cart", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+          },
+          body: JSON.stringify({ produk_id: produkId, jumlah })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast("Produk berhasil ditambahkan ke cart! 🛒", "success");
+        } else {
+          showToast(data.message, "error");
+        }
+
+      } catch (err) {
+        showToast("Server error!", "error");
+      }
+    }
+
+    // ── Toast Notification ──
+    function showToast(message, type = "") {
+      const toast = document.getElementById("toast");
+      toast.innerText  = message;
+      toast.className  = "toast " + type;
+      toast.style.display = "block";
+
+      setTimeout(() => {
+        toast.style.display = "none";
+      }, 3000);
+    }
+
+    // ── Logout ──
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    // Load pertama
+    getProdukDetail();
+  </script>
+
+</body>
+</html>
