@@ -168,7 +168,14 @@ async function searchProduk() {
         data.forEach(produk => {
           grid.innerHTML += `
             <a class="produk-card" href="detail.html?id=${produk.id}">
-              <div class="produk-card-img">👟</div>
+              <div class="produk-card-img">
+    ${produk.gambar
+        ? `<img src="${API}/uploads/${produk.gambar}" alt="${produk.nama}"
+            onerror="this.parentElement.innerHTML='<span style=font-size:4rem>👟</span>'"
+            style="width:100%; height:100%; object-fit:cover;" />`
+        : '<span style="font-size:4rem">👟</span>'
+    }
+</div>
               <div class="produk-card-body">
                 <div class="produk-card-kategori">${produk.kategori}</div>
                 <div class="produk-card-nama">${produk.nama}</div>

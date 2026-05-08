@@ -121,4 +121,119 @@ const getOrderDetail = async (req, res) => {
     }
 };
 
-module.exports = { checkout, getOrders, getOrderDetail}
+//UPDATE STATUS ORDER (admin only)
+const updateStatusOrder = async (req, res) => {
+    try {
+        //cek role admin
+        if (req.user.role !== 'admin'){
+            return res.statu(403).json({
+                message: "Akses ditolak! Hanya Admin"
+            });
+        }
+
+        const orderId = req.params.id;
+        const { status } = req.body;
+
+        //validasi status
+        const validStatus = ['pending', 'paid', 'shipped', 'done'];
+        if(!validStatus.includes(status)){
+            return res.status(400).json({
+                message: "Status tidak valid!"
+            });
+        }
+
+        //cek order ada
+        const [cekOrder] = await db.query(
+            'SELECT * FROM orders WHERE id = ?', [orderId]
+        );
+        if(cekOrder.length === 0) {
+            return res.status(404).json({
+                message: "Order tidak ditemukan!"
+            });
+        }
+
+        //Update status
+        await db.query(
+            'UPDATE orders SET status = ? WHERE id = ?',
+            [status, orderId]
+        );
+
+        res.json({
+            message: "Statu order berhasil diupdate!"
+        });
+    }catch (err){
+        console.error(err);
+        res.status(500).json({
+            message: "Terjadi kesalahan server"
+        });
+    }
+};
+
+const getAllOrders = async (req, res) => {
+    try{
+        if(req.user.role !== 'admin'){
+            return res.admin(403).json({
+                message: "Akses ditolak!"
+            });
+        }
+
+        //JOIN dengan tabel users untuk dapat nama user
+        const [rows] = await db.query(
+            `SELECT orders.*, users.nama AS nama_user
+             FROM orders
+             JOIN users ON orders.user_id = users.id
+             ORDER BY orders.created_at DESC`
+        );
+
+        res.json(rows);
+    } catch (err){
+        res.status(500).json({
+            message: "Terjadi kesalahan server"
+        });
+    }
+};
+
+const hapusOrder = async (req, res) => {
+    try{
+        //cek role admin
+        if (req.user.role !== 'admin'){
+            return res.status(403).json({
+                message: "Akses ditolak! hanya admin"
+            });
+        }
+
+        const orderId = req.params.id;
+
+        //cek order ada
+        const[cekOrder] = await db.query(
+            'SELECT * FROM orders WHERE id = ?', [orderId]
+        );
+
+        if (cekOrder.length === 0) {
+            return res.status(404).json({
+                message: "order tidak ditemukan!"
+            });
+        }
+
+        //hapus order_items sebelum hapus order karena ada foreign key
+        await db.query(
+            'DELETE FROM order_items WHERE order_id = ?', [orderId]
+        );
+
+        //baru hapus ordernya
+        await db.query(
+            'DELETE FROM orders WHERE id = ?', [orderId]
+        );
+
+        res.json({
+            message: "Order berhasil dihapus@"
+        });
+    } catch (err){
+        console.error(err);
+        res.status(500).json({
+            message: "terjadi kesalahan server"
+        });
+    }
+};
+
+module.exports = { checkout, getOrders, getOrderDetail, updateStatusOrder, getAllOrders, hapusOrder};

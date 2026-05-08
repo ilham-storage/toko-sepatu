@@ -81,7 +81,14 @@
         }
 
         document.getElementById("detailWrap").innerHTML = `
-          <div class="detail-img">👟</div>
+          <div class="detail-img">
+    ${data.gambar
+        ? `<img src="${API}/uploads/${data.gambar}" alt="${data.nama}"
+            onerror="this.parentElement.innerHTML='<span style=font-size:8rem>👟</span>'"
+            style="width:100%; height:100%; object-fit:contain; padding:20px;" />`
+        : '<span style="font-size:8rem">👟</span>'
+    }
+</div>
 
           <div class="detail-info">
             <div class="detail-kategori">${data.kategori}</div>

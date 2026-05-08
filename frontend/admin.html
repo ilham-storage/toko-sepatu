@@ -16,6 +16,7 @@
       <div class="navbar-menu">
         <a href="index.html">Toko</a>
         <a href="admin.html" style="color:var(--primary); font-weight:600">Admin</a>
+        <a href="admin-orders.html">📦 Pesanan</a>
       </div>
       <div class="navbar-right">
         <span id="nav-username"></span>
@@ -63,6 +64,14 @@
           <input id="f-deskripsi" class="input" type="text" placeholder="Deskripsi produk..." />
         </div>
       </div>
+
+        <div class="field">
+          <label>Gambar Produk</label>
+          <input id="f-gambar" class="input" type="file" accept="image/*" />
+          <small style="color:var(--text-muted); font-size:0.75rem; margin-top:4px; display:block;">
+              FOrmat: JPG, PNG, WEBP. Maksimal 2MB
+          </small>
+        </div>
 
       <input id="f-id" type="hidden" value="" />
 
@@ -159,6 +168,7 @@
       const harga     = document.getElementById("f-harga").value;
       const stok      = document.getElementById("f-stok").value;
       const deskripsi = document.getElementById("f-deskripsi").value;
+      const gambar    = document.getElementById("f-gambar").files[0];
 
       if (!nama || !harga || !stok) {
         document.getElementById("message").innerText = "Nama, harga, stok wajib diisi!";
@@ -166,6 +176,18 @@
       }
 
       try {
+        //Pakai FormData karena ada file!
+        const formData = new FormData();;
+        formData.append("nama",     nama);
+        formData.append("kategori", kategori);
+        formData.append("harga",    harga);
+        formData.append("stok",     stok);
+        formData.append("deskripsi", deskripsi);
+        
+        //Hanya append gambar kalau ada file Baru
+        if (gambar) formData.append("gambar", gambar);
+
+
         // Kalau ada id → edit, kalau tidak → tambah
         const url    = id ? API + "/produk/" + id : API + "/produk";
         const method = id ? "PUT" : "POST";
@@ -173,10 +195,9 @@
         const res = await fetch(url, {
           method,
           headers: {
-            "Content-Type": "application/json",
             Authorization: "Bearer " + token
           },
-          body: JSON.stringify({ nama, kategori, harga, stok, deskripsi })
+          body: formData
         });
 
         const data = await res.json();

@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 
 //import routes
@@ -13,6 +14,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/auth',   authRoutes);
 app.use('/produk', produkRoutes);
 app.use('/cart',   cartRoutes);

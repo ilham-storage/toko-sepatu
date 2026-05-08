@@ -75,7 +75,10 @@ const tambahProduk = async (req, res) => {
             });
         }
 
-        const { nama, deskripsi, harga, stok, gambar, kategori } = req.body;
+        const { nama, deskripsi, harga, stok, kategori } = req.body;
+
+        console.log("Body:", req.body);
+        console.log("File:", req.file);
 
         //cek data lengkap
         if(!nama || !harga || !stok){
@@ -84,6 +87,9 @@ const tambahProduk = async (req, res) => {
             });
         }
 
+        //ambil nama file dari multer
+        const gambar = req.file ? req.file.filename : null;
+
         await db.query(
             'INSERT INTO produk (nama, deskripsi, harga, stok, gambar, kategori) VALUES (?, ?, ?, ?, ?, ?)',
             [nama, deskripsi, harga, stok, gambar, kategori]
@@ -91,6 +97,7 @@ const tambahProduk = async (req, res) => {
 
         res.json({ message: "Produk berhasil ditambahkan!"});
     } catch (err){
+        console.error("Error tambahProduk:", err);
         res.status(500).json({
             message: "Terjadi kesalahan server"
         });
@@ -107,7 +114,7 @@ const editProduk = async (req, res) => {
         }
         
         const produkId = req.params.id;
-        const { nama, deskripsi, harga, stok, gambar, kategori } = req.body;
+        const { nama, deskripsi, harga, stok, kategori } = req.body;
 
         //Cek produk ada
         const [cekProduk] = await db.query(
@@ -120,6 +127,10 @@ const editProduk = async (req, res) => {
                 message: "Produk tidak ditemukan!"
             });
         }
+
+        //kalau ada file baru pakai yang baru / kalau ada file lama pake yang lama
+        const gambar = req.file ? req.file.filename : cekProduk[0].gambar;
+
         await db.query(
             'UPDATE produk SET nama=?, deskripsi=?, harga=?, stok=?, gambar=?, kategori=? WHERE id=?',
             [nama, deskripsi, harga, stok, gambar, kategori, produkId]

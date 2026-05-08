@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Pesanan — SepatuKu</title>
+  <link href="https://fonts.google.com/share?selection.family=Oswald:wght@200..700" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar scrolled">
+    <div class="navbar-inner">
+      <a class="navbar-logo" href="index.html">👟 SepatuKu</a>
+      <div class="navbar-menu">
+        <a href="index.html">Toko</a>
+        <a href="admin.html">Produk</a>
+        <a href="admin-orders.html" style="color:var(--primary); font-weight:600;">Pesanan</a>
+      </div>
+      <div class="navbar-right">
+        <span id="nav-username"></span>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h2 class="page-title">Kelola Pesanan</h2>
+    <p class="page-sub">Lihat dan update status semua pesanan!</p>
+
+    <!-- Filter Status -->
+    <div class="filter-status">
+      <button class="filter-btn active" onclick="setFilter('semua')" id="f-semua">Semua</button>
+      <button class="filter-btn" onclick="setFilter('pending')"  id="f-pending">⏳ Pending</button>
+      <button class="filter-btn" onclick="setFilter('paid')"     id="f-paid">💰 Paid</button>
+      <button class="filter-btn" onclick="setFilter('shipped')"  id="f-shipped">🚚 Shipped</button>
+      <button class="filter-btn" onclick="setFilter('done')"     id="f-done">✅ Done</button>
+    </div>
+
+    <!-- Tabel Order -->
+    <div style="overflow-x:auto;">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>User</th>
+            <th>Total</th>
+            <th>Tanggal</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTable"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <!-- Modal Detail -->
+  <div id="modal" style="
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:200;
+    justify-content:center;
+    align-items:center;
+  ">
+    <div style="
+      background:white;
+      border-radius:20px;
+      padding:32px;
+      width:90%;
+      max-width:500px;
+      max-height:80vh;
+      overflow-y:auto;
+      position:relative;
+    ">
+      <button onclick="tutupModal()" style="
+        position:absolute;
+        top:16px; right:16px;
+        background:none;
+        border:none;
+        font-size:1.5rem;
+        cursor:pointer;
+        color:#6b7280;
+      ">✕</button>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" style="display:none"></div>
+
+  <script>
+    const API   = "http://localhost:3000";
+    const token = localStorage.getItem("token");
+    const user  = JSON.parse(localStorage.getItem("user"));
+
+    // Proteksi halaman
+    if (!token) window.location.href = "login.html";
+    if (user && user.role !== "admin") window.location.href = "index.html";
+
+    document.getElementById("nav-username").innerText = user ? "👑 " + user.nama : "";
+
+    let allOrders     = []; // simpan semua order
+    let currentFilter = "semua";
+
+    // ── Format ──
+    function formatHarga(harga) {
+      return "Rp " + harga.toLocaleString("id-ID");
+    }
+    function formatTanggal(tanggal) {
+      return new Date(tanggal).toLocaleDateString("id-ID", {
+        day: "numeric", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+    }
+
+    // ── Set Filter ──
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+      document.getElementById("f-" + filter).classList.add("active");
+      renderOrders();
+    }
+
+    // ── Get Semua Order ──
+    async function getOrders() {
+      try {
+        const res  = await fetch(API + "/order/admin/all", {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const data = await res.json();
+        allOrders  = data;
+        renderOrders();
+
+      } catch (err) {
+        showToast("Gagal memuat pesanan!", "error");
+      }
+    }
+
+    // ── Render Orders ──
+    function renderOrders() {
+      const tbody = document.getElementById("ordersTable");
+
+      // Filter
+      const filtered = currentFilter === "semua"
+        ? allOrders
+        : allOrders.filter(o => o.status === currentFilter);
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted)">
+              Tidak ada pesanan ${currentFilter !== "semua" ? "dengan status " + currentFilter : ""}
+            </td>
+          </tr>`;
+        return;
+      }
+
+      tbody.innerHTML = "";
+      filtered.forEach(order => {
+        tbody.innerHTML += `
+          <tr>
+            <td><strong>#${order.id}</strong></td>
+            <td>${order.nama_user || "User #" + order.user_id}</td>
+            <td><strong style="color:var(--primary)">${formatHarga(order.total)}</strong></td>
+            <td>${formatTanggal(order.created_at)}</td>
+            <td>
+              <span class="order-status status-${order.status}">
+                ${order.status}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+    <select class="status-select" id="select-${order.id}"
+        onchange="updateStatus(${order.id})">
+        <option value="pending"  ${order.status === 'pending'  ? 'selected' : ''}>⏳ Pending</option>
+        <option value="paid"     ${order.status === 'paid'     ? 'selected' : ''}>💰 Paid</option>
+        <option value="shipped"  ${order.status === 'shipped'  ? 'selected' : ''}>🚚 Shipped</option>
+        <option value="done"     ${order.status === 'done'     ? 'selected' : ''}>✅ Done</option>
+    </select>
+    <button class="btn-secondary"
+        style="padding:6px 12px; font-size:0.78rem;"
+        onclick="lihatDetail(${order.id})">
+        Detail
+    </button>
+    <button class="btn-danger"
+        onclick="hapusOrder(${order.id})">
+        🗑️ Hapus
+    </button>
+</div>
+            </td>
+          </tr>`;
+      });
+    }
+
+    // ── Update Status ──
+    async function updateStatus(orderId) {
+      const status = document.getElementById("select-" + orderId).value;
+
+      try {
+        const res = await fetch(API + "/order/" + orderId + "/status", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token
+          },
+          body: JSON.stringify({ status })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          showToast("Status order #" + orderId + " → " + status + " ✅", "success");
+          getOrders(); // refresh
+        } else {
+          showToast(data.message, "error");
+        }
+
+      } catch (err) {
+        showToast("Server error!", "error");
+      }
+    }
+
+    // ── Lihat Detail ──
+    async function lihatDetail(orderId) {
+      try {
+        const res  = await fetch(API + "/order/" + orderId, {
+          headers: { Authorization: "Bearer " + token }
+        });
+        const data = await res.json();
+
+        let itemsHTML = "";
+        data.items.forEach(item => {
+          itemsHTML += `
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              padding:12px 0;
+              border-bottom:1px solid var(--border);
+            ">
+              <div>
+                <div style="font-weight:600">${item.nama}</div>
+                <div style="font-size:0.82rem; color:var(--text-muted)">
+                  ${item.jumlah} pasang × ${formatHarga(item.harga)}
+                </div>
+              </div>
+              <div style="font-weight:700; color:var(--primary)">
+                ${formatHarga(item.subtotal)}
+              </div>
+            </div>`;
+        });
+
+        document.getElementById("modalContent").innerHTML = `
+          <h3 style="font-family:var(--font-display); font-size:1.3rem; font-weight:800; margin-bottom:4px;">
+            Order #${data.order.id}
+          </h3>
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:8px;">
+            ${formatTanggal(data.order.created_at)}
+          </p>
+          <span class="order-status status-${data.order.status}" style="margin-bottom:20px; display:inline-block;">
+            ${data.order.status}
+          </span>
+
+          <div style="margin-top:16px;">
+            ${itemsHTML}
+          </div>
+
+          <div style="display:flex; justify-content:space-between; font-weight:700; font-size:1.1rem; margin-top:16px; padding-top:16px; border-top:1.5px solid var(--border);">
+            <span>Total</span>
+            <span style="color:var(--primary)">${formatHarga(data.order.total)}</span>
+          </div>
+        `;
+
+        document.getElementById("modal").style.display = "flex";
+
+      } catch (err) {
+        showToast("Gagal memuat detail!", "error");
+      }
+    }
+
+    // ── Tutup Modal ──
+    function tutupModal() {
+      document.getElementById("modal").style.display = "none";
+    }
+    document.getElementById("modal").addEventListener("click", function(e) {
+      if (e.target === this) tutupModal();
+    });
+
+    // ── Toast ──
+    function showToast(message, type = "") {
+      const toast = document.getElementById("toast");
+      toast.innerText     = message;
+      toast.className     = "toast " + type;
+      toast.style.display = "block";
+      setTimeout(() => { toast.style.display = "none"; }, 3000);
+    }
+
+    // ── Logout ──
+    function logout() {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    // ── Hapus Order ──
+async function hapusOrder(orderId) {
+    // Konfirmasi dulu
+    if (!confirm("Yakin mau hapus Order #" + orderId + "? Data tidak bisa dikembalikan!")) return;
+
+    try {
+        const res = await fetch(API + "/order/" + orderId, {
+            method: "DELETE",
+            headers: { Authorization: "Bearer " + token }
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+            showToast("Order #" + orderId + " berhasil dihapus! 🗑️", "success");
+            getOrders(); // refresh
+        } else {
+            showToast(data.message, "error");
+        }
+
+    } catch (err) {
+        showToast("Server error!", "error");
+    }
+}
+    getOrders();
+  </script>
+
+</body>
+</html>
