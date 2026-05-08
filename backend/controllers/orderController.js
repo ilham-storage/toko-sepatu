@@ -16,7 +16,7 @@ const checkout = async (req, res) => {
 
         //Cek cart tidak kosong
         if(items.length === 0){
-            return res.status(400),json({
+            return res.status(400).json({
                 message : "Cart masih kosong!"
             });
         }
@@ -36,12 +36,38 @@ const checkout = async (req, res) => {
 
         //simpan semua item ke order_items
         for(const item of items) {
-            await db.query(
-                'INSERT INTO order_items (order_id, produk_id, jumlah, harga) VALUES (?, ?, ?, ?)',
-                [orderId, item.produk_id, item.jumlah, item.harga]
-            );
+            //cek stok produk
+        const [produk] = await db.query(
+            'SELECT stok FROM produk WHERE id = ?',
+            [item.produk_id]
+        );
+
+        //produk tidak ditemukan
+        if (produk.length === 0) {
+            return res.status(404).json({
+                message: "Produk tidak ditemukan!"
+            });
         }
 
+        //stok tidak cukup
+            if (produk[0].stok < item.jumlah) {
+            return res.status(400).json({
+                message: `Stok ${item.nama} tidak cukup!`
+            });
+        }
+
+        //simpan order item
+        await db.query(
+            'INSERT INTO order_items (order_id, produk_id, jumlah, harga) VALUES (?, ?, ?, ?)',
+            [orderId, item.produk_id, item.jumlah, item.harga]
+        );
+
+        //kurangi stok produk
+        await db.query(
+            'UPDATE produk SET stok = stok - ? WHERE id = ?',
+            [item.jumlah, item.produk_id]
+        );
+    }
         //kosongkan chart
         await db.query(
             'DELETE FROM cart WHERE user_id = ?',
@@ -82,13 +108,23 @@ const getOrders = async (req, res) => {
 const getOrderDetail = async (req, res) => {
     try {
         const userId = req.user.id;
+        const role = req.user.role;
         const orderId = req.params.id;
 
-        //Check order ada dan milik user ini
-        const [cekOrder] = await db.query(
-            'SELECT * FROM orders WHERE id = ? AND user_id = ?',
-            [orderId, userId]
-        );
+        //admin bisa liat semua order
+        //user bias hanya liat order miliknya
+        let cekOrder;
+        if(role === 'admin') {
+            [cekOrder] = await db.query(
+                'SELECT * FROM orders WHERE id = ?',
+                [orderId]
+            );
+        } else {
+            [cekOrder] = await db.query(
+                'SELECT * FROM orders WHERE id = ? AND user_id = ?',
+                [orderId, userId] 
+            );
+        }
 
         if(cekOrder.length === 0) {
             return res.status(404).json({
