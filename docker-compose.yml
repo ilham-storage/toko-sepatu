@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # Database Service
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: toko_sepatu
+      MYSQL_ROOT_PASSWORD: password_aman
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./toko_sepatu.sql:/docker-entrypoint-initdb.d/init.sql
+
+  # Backend Service
+  backend:
+    build: ./backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASSWORD=password_aman
+      - DB_NAME=toko_sepatu
+    depends_on:
+      - db
+
+  # Frontend Service
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  db_data:

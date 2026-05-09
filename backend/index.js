@@ -21,6 +21,6 @@ app.use('/cart',   cartRoutes);
 app.use('/order',  orderRoutes);
 
 // Jalankan server
-app.listen(3000, () => {
-    console.log('Server toko sepatu jalan di port 3000 🚀');
+app.listen(5000, () => {
+    console.log('Server toko sepatu jalan di port 5000 🚀');
 });
