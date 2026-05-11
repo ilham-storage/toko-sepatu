@@ -4,6 +4,10 @@
 
 🌐 Live Demo: [http://103.197.190.160/login.html](http://103.197.190.160/login.html)
 
+Untuk melihat halaman Admin 
+Email : Admin@toko.com
+Password : admin123
+
 ---
 
 📋 Daftar Isi
