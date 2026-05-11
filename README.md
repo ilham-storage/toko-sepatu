@@ -139,7 +139,7 @@ Import file SQL yang sudah tersedia:
 4. Klik Go
 ```
 
-### 4. Konfigurasi Environment
+4. Konfigurasi Environment
 Sesuaikan konfigurasi database di `backend/config/db.js`:
 ```js
 const db = mysql.createPool({
@@ -150,43 +150,43 @@ const db = mysql.createPool({
 });
 ```
 
-### 5. Jalankan Server
+5. Jalankan Server
 ```bash
 cd backend
 node index.js
 # Server berjalan di http://localhost:5000
 ```
 
-### 6. Buka Frontend
+6. Buka Frontend
 Buka file `frontend/index.html` di browser atau gunakan Live Server.
 
 ---
 
-## 🐳 Menjalankan dengan Docker
+🐳 Menjalankan dengan Docker
 
-### Prerequisites
+Prerequisites
 - [Docker](https://www.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/)
 
-### Langkah-langkah
+Langkah-langkah
 
 ```bash
 # 1. Clone repository
 git clone https://github.com/ilham-storage/toko-sepatu.git
 cd toko-sepatu
 
-# 2. Jalankan dengan Docker Compose
+2. Jalankan dengan Docker Compose
 docker-compose up -d
 
-# 3. Cek container berjalan
+3. Cek container berjalan
 docker-compose ps
 
-# 4. Akses aplikasi
-# Frontend : http://localhost:80
-# Backend  : http://localhost:5000
+4. Akses aplikasi
+Frontend : http://localhost:80
+Backend  : http://localhost:5000
 ```
 
-### Menghentikan Container
+Menghentikan Container
 ```bash
 docker-compose down
 ```
@@ -195,13 +195,13 @@ docker-compose down
 
 ## 📡 API Endpoint
 
-### 🔐 Auth
+🔐 Auth
 | Method | Endpoint | Deskripsi | Auth |
 |--------|----------|-----------|------|
 | POST | `/auth/register` | Daftar akun baru | ❌ |
 | POST | `/auth/login` | Login & dapat token | ❌ |
 
-### 👟 Produk
+👟 Produk
 | Method | Endpoint | Deskripsi | Auth |
 |--------|----------|-----------|------|
 | GET | `/produk` | Ambil semua produk | ❌ |
@@ -211,7 +211,7 @@ docker-compose down
 | PUT | `/produk/:id` | Edit produk | 👑 Admin |
 | DELETE | `/produk/:id` | Hapus produk | 👑 Admin |
 
-### 🛒 Cart
+🛒 Cart
 | Method | Endpoint | Deskripsi | Auth |
 |--------|----------|-----------|------|
 | GET | `/cart` | Lihat isi cart | ✅ |
@@ -220,7 +220,7 @@ docker-compose down
 | DELETE | `/cart/:id` | Hapus item | ✅ |
 | DELETE | `/cart/kosong` | Kosongkan cart | ✅ |
 
-### 📦 Order
+📦 Order
 | Method | Endpoint | Deskripsi | Auth |
 |--------|----------|-----------|------|
 | POST | `/order/checkout` | Checkout | ✅ |
@@ -232,7 +232,7 @@ docker-compose down
 
 ---
 
-## 🗄️ Database Schema
+🗄️ Database Schema
 
 ```
 users ──────────────── cart ──────── produk
